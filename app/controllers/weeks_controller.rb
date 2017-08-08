@@ -5,7 +5,7 @@ class WeeksController < ApplicationController
     'Time tracking is fun!'
   end
   
-  def week 
+  def week
     text = params['text']
     if text == ''
       out = "It is currently week #{wkdt(Time.now)}!"
@@ -19,18 +19,18 @@ class WeeksController < ApplicationController
         out = "Date #{d.to_date} is week #{wkdt(d)}"
       end
     end
-    return out
+    render :json => out
   end
   
-  def setkey do
+  def setkey
     user = params['user_id']
     text = params['text']
     
-    return 'Please specify a key' unless text
+    ender :json => 'Please specify a key' unless text
     u = User.find_or_create_by(slackid:user)
     u.ghkey = text
     u.save!
-    return 'Saved'
+    render :json => 'Saved'
   end
   
   def comment
@@ -38,17 +38,17 @@ class WeeksController < ApplicationController
     key = get_key(params['user_id'])
     
     unless key
-      return "Missing github key. Generate and add personal access token with repo access using '/setkey [token]'"
+      render :json => "Missing github key. Generate and add personal access token with repo access using '/setkey [token]'"
     end
     
     if text.empty?
-      return 'Uh oh, please specify an issue # and a comment'
+      render :json => 'Uh oh, please specify an issue # and a comment'
     end
     
     num = text.shift
     
     unless numeric(num) && text.count >= 1
-      return 'Oops, please specify an issue # and a comment'
+      render :json =>  'Oops, please specify an issue # and a comment'
     end
     
     comment = text.join(' ')
@@ -57,9 +57,9 @@ class WeeksController < ApplicationController
     resp = HTTParty.post(url,:body=>{:body=>comment}.to_json)
     
     if resp.code == 201
-      return 'Commented!'
+      render :json => 'Commented!'
     else 
-      return "Error #{resp.code}"
+      render :json => "Error #{resp.code}"
     end
   end
   
@@ -68,21 +68,21 @@ class WeeksController < ApplicationController
     key = get_key(params['user_id'])
           
     unless key
-      return "Missing github key. Generate and add personal access token with '/setkey [token]'"
+      render :json => "Missing github key. Generate and add personal access token with '/setkey [token]'"
     end
     
     title = text.first
     content = text.last
     
-    return 'Please add some text' if title.nil?
+    render :json => 'Please add some text' if title.nil?
     url = COMMENT_URL+"/basin/issues?access_token=#{key}"
     
     resp = HTTParty.post(url,:body=>{:title=>title,:body=>content}.to_json)
     
     if resp.code == 201
-      return "Issue created at #{resp.parsed_response['url']}"
+      render :json => "Issue created at #{resp.parsed_response['url']}"
     else 
-      return "Error #{resp.code}"
+      render :json => "Error #{resp.code}"
     end
   end
     
