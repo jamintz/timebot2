@@ -9,6 +9,8 @@ task :get_comps => :environment do
       )
     end
   end
+  names = comps.map{|x|x['properties']['name']['value']}
+  Cost.where.not(title:names).where.not(category:'cost center').destroy_all
 end
 
 def companyget offset = nil
