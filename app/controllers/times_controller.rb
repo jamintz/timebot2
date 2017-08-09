@@ -65,7 +65,7 @@ class TimesController < ApplicationController
    render :json => out
  end
     
-  def remove
+  def unfavorite
     u = User.find_or_create_by(slackid:params['user_id'])
     id = params['text']
     c = Cost.where(code:id).first

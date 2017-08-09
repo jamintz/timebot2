@@ -7,7 +7,7 @@ Rails.application.routes.draw do
   
   post '/times/standup'
   post '/times/add'
-  post '/times/remove'
+  post '/times/unfavorite'
   post '/times/favorites'
   post '/times/save'
   post '/times/find'
