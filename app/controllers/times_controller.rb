@@ -23,11 +23,6 @@ class TimesController < ApplicationController
     @sl = get_slack
     @sl.users_info(user:id).user.tz
   end
-
-  def getdeal(id)
-    resp = RestClient.get(BASE+"/deals/v1/deal/#{id}?hapikey=#{APIKEY}")
-    JSON.parse(resp.body)
-  end
   
   def getemail(id)
     @sl = get_slack
@@ -40,17 +35,11 @@ class TimesController < ApplicationController
   end
   
   def get_slack
-    token = 'xoxb-130027786769-Zcw6veISkzlUdoPAaOW6i3Aw'
+    token = ''
     Slack.configure do |config|
       config.token = token
     end
     @sl || Slack::Web::Client.new
-  end
-  
-  def weekdate(tz)
-    today = DateTime.now.in_time_zone(tz).to_date
-    wd = today.wday == 0 ? 7 : today.wday - 1
-    date = (today - wd).strftime("%Y-%m-%d")
   end
   
   def find
@@ -174,72 +163,25 @@ class TimesController < ApplicationController
     end
   end
   
-  def runget(type,client,data,match)
-    tz = localtime(data.user)
+  def test
+    u = User.find_or_create_by(slackid:params['user_id'])
     
-    case type
-      when 'get'
-        date = weekdate(tz)
-        open = "This week"
-      when 'stand'
-        date = DateTime.now.in_time_zone(tz).strftime("%Y-%m-%d")
-        open = "Today"
-      else raise exception
+    tz = localtime(u.slackid)
+    date = DateTime.now.in_time_zone(tz).strftime("%Y-%m-%d")
+    
+    out = ""
+    ents = Entry.where(date:date,user_id:u.id)
+    out << "Today you've done #{ents.pluck(:time).sum} total:"
+    if out == 0
+      out << "\nNothing recorded"
+      render :json => out
+    else
+      ents.each do |e|
+        out << "\n#{e.title} (#{e.deal_id}):#{e.time}"
+        out << "– #{e.note}" if e.note
+      end
+      render :json => out
     end
-      
-    pid = nil
-    # begin
-      if match['expression']
-        @sl = get_slack
-        name = match['expression'].gsub(/[^0-9a-z ]/i, '')
-        pid = getuser(name) 
-        greet = "#{@sl.users_info(user:name).user.real_name} has"
-      else
-        pid = getuser(data.user)
-        greet = "you've"
-      end
-      if pid.nil? 
-        client.say(channel:data.channel,text:'User not found')
-      else
-        as = []
-        TYPES.each do |k|
-          as << gettasks(pid,date,k)['data']
-        end
-        as = as.flatten.compact
-
-        hashes = []
-        as.each do |a|
-          id = a['deal_id'] || 'Unknown'
-          exist = hashes.select{|x|x['id']==id}
-          hash = exist.empty? ? Hash.new(0) : exist.first
-          hash['note'] = nil if hash['note'] == 0
-          hash['id'] = id
-          hash['note'] = (hash['note'].nil? ? a['note'] : (hash['note'] + ", " + a['note'])) if type == 'stand' && !a['note'].empty? && (hash['note'].nil? || !hash['note'].include?(a['note']))
-          dur = a['duration'].empty? ? ['00','00'] : a['duration'].split(':')
-          h = dur.first.to_i
-          m = dur.last.to_i
-          
-          deal = a['deal_title'] || 'Unknown'
-          hash['title'] = deal
-          
-          hash['time'] += (h*60+m)
-          hashes << hash if exist.empty?
-        end
-        tot = 0
-        out = ""
-        hashes.each do |h|
-          ending = nil
-          ending = " – #{h['note']}" if h['note']
-          am = (h['time']/60.0).round(1)
-          tot += am
-          out = out + "#{h['title']} (#{h['id']}): #{am}#{ending}\n"
-        end
-        out = "Nothing recorded" if out.empty?
-        client.say(channel: data.channel, text:"#{open} #{greet} done #{tot.round(1)} total:\n#{out}")
-      end
-    # rescue
-    #   client.say(channel:data.channel, text:"Sorry, didn't understand that")
-    # end
   end
 
 end
