@@ -39,7 +39,7 @@ def pdget url,start = 0
   url = url + "&start=#{start}"
   out = get(url)
   data = out['data']
-  page = out['additional_data.pagination']
+  page = out['additional_data']['pagination']
   if page['more_items_in_collection'] == false
     return data
   else 
