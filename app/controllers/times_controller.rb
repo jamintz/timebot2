@@ -1,5 +1,4 @@
 class TimesController < ApplicationController
-
   APIKEY = 'b87e12c0-5e5f-4b77-b5de-d7061a9cc002'
   BASE = "https://api.hubapi.com"
   TYPES = ['time','call','vendor','onsite']
