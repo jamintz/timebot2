@@ -4,171 +4,116 @@ class TimesController < ApplicationController
   BASE = "https://api.hubapi.com"
   TYPES = ['time','call','vendor','onsite']
 
-  def self.getuser(email)
+  def getuser(email)
     resp = RestClient.get(BASE+"/owners/v2/owners?hapikey=#{APIKEY}")
     h = JSON.parse(resp.body)
     ids = h.select{|x|x['email']==email}
     [ids.first['firstName'],ids.first['lastName']].join(' ') unless ids.empty?
   end
   
-  def self.is_number? string
+  def is_number? string
     true if Float(string) rescue false
   end
+  
+  def goget url
+    JSON.parse(HTTParty.get(url).body)
+  end
 
-  def self.localtime id
+  def localtime id
     @sl = get_slack
     @sl.users_info(user:id).user.tz
   end
-  
-  def self.gettasks(user,date,type)
-    resp = RestClient.get("https://api.pipedrive.com/v1/activities?user_id=#{user}&start_date=#{date}&done=1&api_token=#{KEY}&type=#{type}")
-    JSON.parse(resp.body)
-  end
-  
-  def self.getdeal(id)
+
+  def getdeal(id)
     resp = RestClient.get(BASE+"/deals/v1/deal/#{id}?hapikey=#{APIKEY}")
     JSON.parse(resp.body)
   end
   
-  def self.getdeals offset=nil
-    url = BASE+"/deals/v1/deal/paged?hapikey=#{APIKEY}&properties=dealname"
-    puts 'looping'
-    url = url+"&offset=#{offset}" if offset
-    out = JSON.parse(RestClient.get(url).body)     
-    data = out['deals']
-    unless out['hasMore'] == true
-      return data
-    else
-      return (data << getdeals(out['offset'])).flatten
-    end
-  end
-  
-  def self.getemail(id)
+  def getemail(id)
     @sl = get_slack
-    email = @sl.users_info(user:id).user.profile.email
+    @sl.users_info(user:id).user.profile.email
   end
   
-  def self.get_slack
+  def realname(id)
+    @sl = get_slack
+    @sl.users_info(user:id).user.profile.real_name
+  end
+  
+  def get_slack
+    token = 'xoxb-130027786769-Zcw6veISkzlUdoPAaOW6i3Aw'
+    Slack.configure do |config|
+      config.token = token
+    end
     @sl || Slack::Web::Client.new
   end
   
-  def self.weekdate(tz)
+  def weekdate(tz)
     today = DateTime.now.in_time_zone(tz).to_date
     wd = today.wday == 0 ? 7 : today.wday - 1
     date = (today - wd).strftime("%Y-%m-%d")
   end
   
   def find
-    deals = getdeals
     term = params['text'].split(' ')
+    if term.empty?
+      render :json => 'What deal are you looking for?'
+      return
+    end
     out = ""
-    deals.select{|x|term.all?{|w|x['properties']['dealname']['value'].downcase.include?(w.downcase)}}.each do |x|
-      out = out+"#{x['properties']['dealname']['value']}: #{x['dealId']}\n"
+    Cost.all.select{|x|term.all?{|w|x.title.downcase.include?(w.downcase)}}.each do |x|
+      out = out+"#{x.code}: #{x.title}\n"
     end
     out = 'None found' if out.empty?
-    client.say(channel:data.channel,text:out)
+    render :json => out
   end
   
   def save
+    u = User.find_or_create_by(slackid:params['user_id'])
     id = params['text']
-    begin
-     t = getdeal(id)
-     title = t['properties']['dealname']['value']
-     if title
-       x = @r.get(data.user.to_s)      
-       h = x.nil? ? {} : JSON.parse(x)
-       h[id] = title
-       @r.set(data.user,h.to_json)
-       client.say(channel:data.channel,text:"Deal #{id} – #{title} added to favorites")
-     else
-       client.say(channel:data.channel,text:"Deal not found")
-     end
-   rescue
-     client.say(channel:data.channel,text:"Deal not found")
-   end
+    
+    deal = Cost.where(code:id)
+    if deal.empty?
+      render :json => "Deal not found"
+    else
+      Favorite.create(user_id:u.id,cost_id:deal.first.id)
+      render :json => "Added #{deal.first.title} to favorites"
+    end
   end
   
  def favorites
-    x = @r.get(data.user.to_s)
-    if x && !x.empty?
-      h = JSON.parse(x)
-      out = ""
-      h.each{|x|out = out + "\n#{x.first} – #{x.last}"}
-      client.say(channel:data.channel,text:"Your favorites: #{out}")
-    else
-      client.say(channel:data.channel,text:"None found")
-    end
-  end
+   u = User.find_or_create_by(slackid:params['user_id'])
+   out = ""
+   u.favorites.each{|x|out = out + "\n#{x.cost.title} – #{x.cost.code}"}
+   render :json => out
+ end
     
   def remove
-    id = match['expression']
-    x = @r.get(data.user.to_s)
-    h = x.nil? ? {} : JSON.parse(x)
-    fav = h[id]
-    if fav
-      h.delete(id)
-      @r.set(data.user,h.to_json)
-      client.say(channel:data.channel,text:"Deal #{id} removed from favorites")
+    u = User.find_or_create_by(slackid:params['user_id'])
+    id = params['text']
+    c = Cost.where(code:id).first
+    if c.nil?
+      render :json => "Deal not found"
     else
-      client.say(channel:data.channel,text:"Deal not found")
-    end
-  end
-  
-  def totals
-    begin
-      limit = match['expression'] == 'limit' ? true : false
-      @sl = get_slack
-      ids = []
-      
-      client.say(channel:data.channel, text:'Calculating, please wait (this is slow)...')   
-      
-      us = @sl.users_list['members'].select{|x|x['profile']['email'] && x['profile']['email'].include?('@demystdata.com') && !x.deleted}
-      
-      us.each do |i|
-        mail = i.profile.email
-        ids << [i.real_name,getpid(mail),i.tz]
-      end
-      out = []
-      ids.each do |name,id,tz|
-        date = weekdate(tz)
-        next unless id
-        time = 0
-        h = 0
-        m = 0
-        as = []
-        TYPES.each do |k|
-          as << gettasks(id,date,k)['data']
-        end
-        as = as.flatten.compact
-        as.each do |a|
-          dur = a['duration'].empty? ? ['00','00'] : a['duration'].split(':')
-          h += dur.first.to_i
-          m += dur.last.to_i
-        end
-        time += h*60
-        time += m
-        
-        tot = time==0 ? "#{name} – Nothing recorded" : "#{name} – #{(time/60.0).round(1)}"
-        out << "#{tot}" unless time == 0 && limit
-      end
-      client.say(channel:data.channel, text:out)
-    rescue
-      client.say(channel:data.channel, text:"Sorry, didn't understand that")
+      Favorite.where(user_id:u.id,cost_id:c.id).destroy_all
+      render :json => "Deal #{c.title} removed from favorites"
     end
   end
   
   def add
     begin
       note = nil
-      exp = match['expression'].split(' ')
+      exp = params['text'].split(' ')
       if exp.length < 2 || !is_number?(exp[1]) || (!is_number?(exp[0]) && !is_number?(exp[2]))
-          client.say(channel:data.channel, text:"Please enter a code and an amount of time")
+          render :json => "Please enter a code and an amount of time"
       elsif !is_number?(exp[0]) && !TYPES.include?(exp[0].downcase)
-        client.say(channel:data.channel, text:"Supported activity types are time, onsite, call, and vendor")
+        render :json => "Supported activity types are time, onsite, call, and vendor"
       else
-        email = getemail(data.user)
-        user = getuser(email)
-        tz = localtime(data.user)
+        u = User.find_or_create_by(slackid:params['user_id'])
+        u.name ||= realname(u.slackid)
+        u.email ||= getemail(u.slackid)
+        u.save!
+        
+        tz = localtime(u.slackid)
         due = DateTime.now.in_time_zone(tz).strftime("%Y-%m-%d")
         zone = ActiveSupport::TimeZone[tz]
         
@@ -201,37 +146,35 @@ class TimesController < ApplicationController
           end
         end
                       
-        if hours > 40
-          client.say(channel: data.channel, text: "You can only add up to 40 hours at a time")
+        if time > 40
+          render :json => "You can only add up to 40 hours at a time"
         else   
-          begin      
-            hdeal = getdeal(deal)
-            body = 
-            {
-              "user":user,
-              "kind":kind,
-              "time":time,
-              "date":due,
-              "title":hdeal['properties']['dealname']['value'],
-              "note":note,
-              "hsdeal_id":hdeal['dealId']
-            }
-            RestClient.post("SCORECARDURL/time_expenses/add",body)   
-            out = "Thanks <@#{data.user}>! #{time} for you added to code #{res['deal_id']}, #{res['deal_title']} on #{due} for #{kind}"
-            out = out +  " with note: #{note}" if note && note != ""
-            client.say(channel: data.channel, text: out)
+          begin
+            title = Cost.where(code:deal).first.title
+            Entry.create(
+            user_id:u.id,
+            email:u.email,
+            date:due,
+            deal_id:deal,
+            kind:kind,
+            note:note,
+            time:time,
+            title:title,
+            user_name:u.name
+            ) 
+            render :json => "Thanks! #{time} added to #{deal} (#{title}) for #{due}"
           rescue
-            client.say(channel:data.channel, text:"Deal not found")
+            render :json => "Deal not found"
           end
         end
 
       end
     rescue
-      client.say(channel:data.channel, text:"Sorry, didn't understand that")
+      render :json => "Sorry, didn't understand that"
     end
   end
   
-  def self.runget(type,client,data,match)
+  def runget(type,client,data,match)
     tz = localtime(data.user)
     
     case type
@@ -298,12 +241,5 @@ class TimesController < ApplicationController
     #   client.say(channel:data.channel, text:"Sorry, didn't understand that")
     # end
   end
-  
-  def standup
-    runget('stand',client,data,match)
-  end
 
-  def get
-    runget('get',client,data,match)
-  end
 end

@@ -14,5 +14,7 @@ Rails.application.routes.draw do
   post '/times/save'
   post '/times/find'
   
+  post '/times/test'
+  
   
 end

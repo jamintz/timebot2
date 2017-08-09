@@ -48,3 +48,5 @@ end
 gem 'chronic'
 gem 'httparty'
 gem 'rest-client'
+gem 'slack-ruby-bot'
+gem 'slack-ruby-client'
