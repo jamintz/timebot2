@@ -35,9 +35,8 @@ class TimesController < ApplicationController
   end
   
   def get_slack
-    token = ''
     Slack.configure do |config|
-      config.token = token
+      config.token = ENV['slack_token']
     end
     @sl || Slack::Web::Client.new
   end
@@ -163,7 +162,7 @@ class TimesController < ApplicationController
     end
   end
   
-  def test
+  def standup
     u = User.find_or_create_by(slackid:params['user_id'])
     
     tz = localtime(u.slackid)
@@ -177,11 +176,10 @@ class TimesController < ApplicationController
       render :json => out
     else
       ents.each do |e|
-        out << "\n#{e.title} (#{e.deal_id}):#{e.time}"
-        out << "– #{e.note}" if e.note
+        out << "\n#{e.title} (#{e.deal_id}): #{e.time}"
+        out << " – #{e.note}" unless e.note.nil? || e.note.empty?
       end
-      render :json => out
+      render :json => {"response_type": "in_channel","text": out}.to_json
     end
   end
-
 end
