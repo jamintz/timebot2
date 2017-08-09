@@ -2,6 +2,7 @@ class TimesController < ApplicationController
   APIKEY = 'b87e12c0-5e5f-4b77-b5de-d7061a9cc002'
   BASE = "https://api.hubapi.com"
   TYPES = ['time','call','vendor','onsite']
+  SLACK_BASE = "https://slack.com/api/"
 
   def getuser(email)
     resp = RestClient.get(BASE+"/owners/v2/owners?hapikey=#{APIKEY}")
@@ -19,25 +20,15 @@ class TimesController < ApplicationController
   end
 
   def localtime id
-    @sl = get_slack
-    @sl.users_info(user:id).user.tz
+    HTTParty.get(SLACK_BASE+"users.info?token=#{ENV['SLACK_TOKEN']}&user=#{id}").parsed_response['user']['tz']
   end
   
   def getemail(id)
-    @sl = get_slack
-    @sl.users_info(user:id).user.profile.email
+    HTTParty.get(SLACK_BASE+"users.info?token=#{ENV['SLACK_TOKEN']}&user=#{id}").parsed_response['user']['profile']['email']
   end
   
   def realname(id)
-    @sl = get_slack
-    @sl.users_info(user:id).user.profile.real_name
-  end
-  
-  def get_slack
-    Slack.configure do |config|
-      config.token = ENV['slack_token']
-    end
-    @sl || Slack::Web::Client.new
+    HTTParty.get(SLACK_BASE+"users.info?token=#{ENV['SLACK_TOKEN']}&user=#{id}").parsed_response['user']['profile']['real_name']
   end
   
   def find
