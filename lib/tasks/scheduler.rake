@@ -48,5 +48,5 @@ def pdget url,start = 0
 end
 
 def get url
-  JSON.parse(HTTParty.get(url)['body'])
+  JSON.parse(HTTParty.get(url).body)
 end
