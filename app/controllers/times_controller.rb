@@ -54,7 +54,7 @@ class TimesController < ApplicationController
       render :json => "Deal not found"
     else
       Favorite.create(user_id:u.id,cost_id:deal.first.id)
-      render :json => "Added #{deal.first.title} to favorites"
+      render :json => "Added #{deal.first.title} (#{id}) to favorites"
     end
   end
   
@@ -73,7 +73,7 @@ class TimesController < ApplicationController
       render :json => "Deal not found"
     else
       Favorite.where(user_id:u.id,cost_id:c.id).destroy_all
-      render :json => "Deal #{c.title} removed from favorites"
+      render :json => "Deal #{c.title} (#{id}) removed from favorites"
     end
   end
   
@@ -140,7 +140,9 @@ class TimesController < ApplicationController
             title:title,
             user_name:u.name
             ) 
-            render :json => "Thanks! #{time} added to #{deal} (#{title}) for #{due}"
+            out = "Thanks! #{time} added to #{deal} (#{title}) for #{due}" 
+            out << " with note #{note}" unless note.empty? || note.nil?
+            render :json => out
           rescue
             render :json => "Deal not found"
           end
