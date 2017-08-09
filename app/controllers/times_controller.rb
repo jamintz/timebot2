@@ -169,13 +169,12 @@ class TimesController < ApplicationController
     out << "Today you've done #{ents.pluck(:time).sum} total:"
     if ents.empty?
       out << "\nNothing recorded"
-      render :json => out
     else
       ents.each do |e|
         out << "\n#{e.title} (#{e.deal_id}): #{e.time}"
         out << " – #{e.note}" unless e.note.nil? || e.note.empty?
       end
-      render :json => {"response_type": "in_channel","text": out}.to_json
     end
+    render :json => {"response_type": "in_channel","text": out}.to_json
   end
 end
