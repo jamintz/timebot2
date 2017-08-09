@@ -16,7 +16,7 @@ def companyget offset = nil
   puts 'looping'
   nurl = url
   nurl = url+"&offset=#{offset}" if offset
-  out = goget(nurl)
+  out = get(nurl)
   data = out['companies']
   unless out['has-more'] == true
     return data
