@@ -12,7 +12,7 @@ task :get_comps => :environment do
 end
 
 def companyget offset = nil
-  url = BASE+"/companies/v2/companies?limit=250&hapikey=#{APIKEY}"
+  url = "https://api.hubapi.com/companies/v2/companies?limit=250&hapikey=b87e12c0-5e5f-4b77-b5de-d7061a9cc002"
   puts 'looping'
   nurl = url
   nurl = url+"&offset=#{offset}" if offset
