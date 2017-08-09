@@ -161,6 +161,12 @@ class TimesController < ApplicationController
     end
   end
   
+  def newcost
+    c = Cost.where(category:'cost center').pluck(:code).max
+    Cost.create(title:params['text'],code:c+1,category:'cost center')
+    render :json => "Added #{params['text']}, code #{c+1}"
+  end
+  
   def standup
     u = User.find_or_create_by(slackid:params['user_id'])
     

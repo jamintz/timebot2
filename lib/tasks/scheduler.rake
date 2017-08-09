@@ -26,7 +26,7 @@ def companyget offset = nil
 end
 
 task :load_legacy => :environment do
-  cost_deals = pdget(pdbase+"/deals?filter_id=153&api_token=94c3da7b2f59297c24493e08ad1e4efdaaa58ae9")
+  cost_deals = pdget("https://api.pipedrive.com/v1/deals?filter_id=153&api_token=94c3da7b2f59297c24493e08ad1e4efdaaa58ae9")
   cost_deals.each do |c|
     if Cost.where(title:c['title']).empty?
       Cost.create(code:c['id'],title:c['title'],category:'cost center')
