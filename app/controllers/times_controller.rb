@@ -167,7 +167,7 @@ class TimesController < ApplicationController
     out = ""
     ents = Entry.where(date:date,user_id:u.id)
     out << "Today you've done #{ents.pluck(:time).sum} total:"
-    if out == 0
+    if ents.empty?
       out << "\nNothing recorded"
       render :json => out
     else
