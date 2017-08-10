@@ -12,6 +12,7 @@ Rails.application.routes.draw do
   post '/times/save'
   post '/times/find'
   post '/times/newcost'
+  post '/times/reset'
   
   get '/times/costs'
   get '/times/entries'

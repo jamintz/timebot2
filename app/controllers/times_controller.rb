@@ -88,6 +88,13 @@ class TimesController < ApplicationController
     end
   end
   
+  def reset
+    u = User.find_or_create_by(slackid:params['user_id'])
+    tz = localtime(u.slackid)
+    date = DateTime.now.in_time_zone(tz).strftime("%Y-%m-%d")
+    u.entries.where(date:date).destroy_all
+  end
+  
   def add
     begin
       note = nil
