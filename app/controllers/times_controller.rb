@@ -185,7 +185,7 @@ class TimesController < ApplicationController
     date = DateTime.now.in_time_zone(tz).strftime("%Y-%m-%d")
     
     out = ""
-    ents = Entry.where(date:date,user_id:u.id)
+    ents = u.entries.where(date:date)
     out << "Today you've done #{ents.pluck(:time).sum} total:"
     if ents.empty?
       out << "\nNothing recorded"
