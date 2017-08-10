@@ -93,6 +93,7 @@ class TimesController < ApplicationController
     tz = localtime(u.slackid)
     date = DateTime.now.in_time_zone(tz).strftime("%Y-%m-%d")
     u.entries.where(date:date).destroy_all
+    render :json => "Day reset"
   end
   
   def add
