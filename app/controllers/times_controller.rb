@@ -138,27 +138,27 @@ class TimesController < ApplicationController
         if time > 40
           render :json => "You can only add up to 40 hours at a time"
         else   
-          begin
-            title = Cost.where(code:deal).first.title
-            Entry.create(
-            user_id:u.id,
-            email:u.email,
-            date:due,
-            deal_id:deal,
-            kind:kind,
-            note:note,
-            time:time,
-            title:title,
-            user_name:u.name
-            ) 
-            out = "Thanks! #{time} added to #{deal} (#{title}) for #{due}" 
-            out << " with note #{note}" unless note.empty? || note.nil?
-            render :json => out
-          rescue
-            render :json => "Deal not found"
-          end
+            cst = Cost.where(code:deal).first
+            if cst.nil?
+              render :json => "Deal not found"
+            else
+              title = cst.title
+              Entry.create(
+              user_id:u.id,
+              email:u.email,
+              date:due,
+              deal_id:deal,
+              kind:kind,
+              note:note,
+              time:time,
+              title:title,
+              user_name:u.name
+              ) 
+              out = "Thanks! #{time} added to #{deal} (#{title}) for #{due}" 
+              out << " with note #{note}" unless note.nil? || note.empty?
+              render :json => out
+            end
         end
-
       end
     rescue
       render :json => "Sorry, didn't understand that"
