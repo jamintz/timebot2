@@ -13,5 +13,5 @@ Rails.application.routes.draw do
   post '/times/find'
   post '/times/newcost'
   
-  get '/times/costs
+  get '/times/costs'
 end
