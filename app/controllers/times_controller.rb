@@ -65,6 +65,12 @@ class TimesController < ApplicationController
    render :json => out
  end
  
+ def entries off = 0
+   c = Entry.count
+   more = c > 200 + off ? true : false
+   render :json => {'entries'=>Entry.limit(200).offset(off),'more'=>more,'offset'=>off+200}.to_json
+ end
+ 
  def costs
    render :json => Cost.pluck(:title,:code).to_json
  end

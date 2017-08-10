@@ -14,4 +14,5 @@ Rails.application.routes.draw do
   post '/times/newcost'
   
   get '/times/costs'
+  get '/times/entries'
 end
