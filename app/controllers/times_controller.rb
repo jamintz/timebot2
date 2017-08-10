@@ -64,6 +64,10 @@ class TimesController < ApplicationController
    u.favorites.each{|x|out = out + "\n#{x.cost.title} – #{x.cost.code}"}
    render :json => out
  end
+ 
+ def costs
+   render :json => Cost.pluck(:title,:code).to_json
+ end
     
   def unfavorite
     u = User.find_or_create_by(slackid:params['user_id'])
