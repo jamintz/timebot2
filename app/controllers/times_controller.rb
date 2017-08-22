@@ -66,6 +66,9 @@ class TimesController < ApplicationController
  end
  
  def entries
+   puts params
+   puts params
+   puts params
    off = params['offset'] || 0
    c = Entry.count
    more = c > 200 + off ? true : false
