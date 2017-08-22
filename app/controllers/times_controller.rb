@@ -66,10 +66,7 @@ class TimesController < ApplicationController
  end
  
  def entries
-   puts params
-   puts params
-   puts params
-   off = params['offset'] || 0
+   off = params['offset'].to_i || 0
    c = Entry.count
    more = c > 200 + off ? true : false
    render :json => {'entries'=>Entry.limit(200).offset(off),'more'=>more,'offset'=>off+200}.to_json
