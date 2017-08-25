@@ -5,6 +5,7 @@ one:
   email: MyString
   hsid: 1
   ghkey: MyString
+  slackid: U0G8BER8A # bob_larrick
 
 two:
   name: MyString
