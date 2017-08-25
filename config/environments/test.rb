@@ -40,3 +40,5 @@ Rails.application.configure do
   # Raises error for missing translations
   # config.action_view.raise_on_missing_translations = true
 end
+
+ENV['SLACK_TOKEN'] = 'xoxp-2529371712-2531497827-130801151733-51bda59c68d41d0c950d5e1d8e56d134'
