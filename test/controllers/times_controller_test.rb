@@ -86,7 +86,7 @@ class TimesControllerTest < ActionDispatch::IntegrationTest
     # bob larrick's slack id is U0G8BER8A
     text = %[onsite 1234 8 spending time onsite]
     post times_add_url, params: { user_id: 'U0G8BER8A', text: text }
-    expected = "Thanks! 8.0 added to 1234 (Pickle Juice) for 2017-08-25 with note spending time onsite"
+    expected = "Thanks! 8.0 added to 1234 (Pickle Juice) for #{Date.today.strftime("%Y-%m-%d")} with note spending time onsite"
     assert_equal expected, @response.body
     entry = @controller.instance_variable_get(:@entry)
     assert_equal entry.kind, "onsite"
@@ -96,7 +96,7 @@ class TimesControllerTest < ActionDispatch::IntegrationTest
     # bob larrick's slack id is U0G8BER8A
     text = %[onsite 1234 8 spending time onsite]
     post times_add_url, params: { user_id: 'U0G8BER8A', text: text }
-    expected = "Thanks! 8.0 added to 1234 (Pickle Juice) for 2017-08-25 with note spending time onsite"
+    expected = "Thanks! 8.0 added to 1234 (Pickle Juice) for #{Date.today.strftime("%Y-%m-%d")} with note spending time onsite"
     assert_equal expected, @response.body
     entry = @controller.instance_variable_get(:@entry)
     assert_equal entry.kind, "onsite"
@@ -106,7 +106,7 @@ class TimesControllerTest < ActionDispatch::IntegrationTest
     # bob larrick's slack id is U0G8BER8A
     text = %[onsite 1234 8 ]
     post times_add_url, params: { user_id: 'U0G8BER8A', text: text }
-    expected = "Thanks! 8.0 added to 1234 (Pickle Juice) for 2017-08-25"
+    expected = "Thanks! 8.0 added to 1234 (Pickle Juice) for #{Date.today.strftime("%Y-%m-%d")}"
     assert_equal expected, @response.body
     entry = @controller.instance_variable_get(:@entry)
     assert_equal entry.kind, "onsite"
