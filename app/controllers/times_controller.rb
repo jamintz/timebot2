@@ -39,35 +39,39 @@ class TimesController < ApplicationController
   end
 
   def find
+    out = "#{params['command']} #{params['text']}\n"
     term = params['text'].split(' ')
     if term.empty?
-      render :json => 'What deal are you looking for?'
+      out << "What deal are you looking for?"
+      render :json => out
       return
     end
-    out = ""
     Cost.all.select{|x|term.all?{|w|x.title.downcase.include?(w.downcase)}}.each do |x|
       out = out+"#{x.code}: #{x.title}\n"
     end
-    out = 'None found' if out.empty?
+    out << 'None found' if out.empty?
     render :json => out
   end
 
   def save
+    out = "#{params['command']} #{params['text']}\n"
     u = User.find_or_create_by(slackid: params['user_id'])
     id = params['text']
 
     deal = Cost.where(code:id)
     if deal.empty?
-      render :json => "Deal not found"
+      out << "Deal not found"
+      render :json => out
     else
       Favorite.create(user_id:u.id,cost_id:deal.first.id)
-      render :json => "Added #{deal.first.title} (#{id}) to favorites"
+      out << "Added #{deal.first.title} (#{id}) to favorites"
+      render :json => out
     end
   end
 
   def favorites
+    out = "#{params['command']} #{params['text']}\n"
     u = User.find_or_create_by(slackid: params['user_id'])
-    out = ""
     u.favorites.each{|x|out = out + "\n#{x.cost.title} – #{x.cost.code}"}
     render :json => out
   end
@@ -84,14 +88,17 @@ class TimesController < ApplicationController
   end
 
   def unfavorite
+    out = "#{params['command']} #{params['text']}\n"
     u = User.find_or_create_by(slackid: params['user_id'])
     id = params['text']
     c = Cost.where(code:id).first
     if c.nil?
-      render :json => "Deal not found"
+      out << "Deal not found"
+      render :json => out
     else
       Favorite.where(user_id:u.id,cost_id:c.id).destroy_all
-      render :json => "Deal #{c.title} (#{id}) removed from favorites"
+      out << "Deal #{c.title} (#{id}) removed from favorites"
+      render :json => out
     end
   end
 
@@ -104,6 +111,7 @@ class TimesController < ApplicationController
   end
 
   def add
+    out = "#{params['command']} #{params['text']}\n"
     begin
       note = nil
       exp = params['text'].split(' ')
@@ -131,10 +139,11 @@ class TimesController < ApplicationController
       note = bob_exp.join(" ")
 
       if exp.length < 2 || !is_number?(time) || (!is_number?(deal_id) && !is_number?(date))
-        render :json => "Please enter a code and an amount of time"
+        out << "Please enter a code and an amount of time"
+        render :json => out
       elsif !is_number?(deal_id) && !TYPES.include?(deal_id.downcase)
-        puts "deal_id, #{deal_id}"
-        render :json => "Supported activity types are time, onsite, call, and vendor"
+        out << "Supported activity types are time, onsite, call, and vendor"
+        render :json => out
       else
         u = User.find_or_create_by(slackid: params['user_id'])
         u.name ||= realname(u.slackid)
@@ -157,11 +166,13 @@ class TimesController < ApplicationController
         fancy_date = due.strftime("%Y-%m-%d")
         note = note.strip
         if time > 40
-          render :json => "You can only add up to 40 hours at a time"
+          out << "You can only add up to 40 hours at a time"
+          render :json => out
         else
           cst = Cost.where(code: deal_id).first
           if cst.nil?
-            render :json => "Deal not found"
+            out << "Deal not found"
+            render :json => out
           else
             title = cst.title
             @entry = Entry.create(
@@ -175,7 +186,7 @@ class TimesController < ApplicationController
               title: title,
               user_name: u.name
             )
-            out = "Thanks! #{time} added to #{deal_id} (#{title}) for #{fancy_date}"
+            out << "Thanks! #{time} added to #{deal_id} (#{title}) for #{fancy_date}"
             out << " with note #{note}" unless note.nil? || note.empty?
             render :json => out
           end
@@ -183,23 +194,28 @@ class TimesController < ApplicationController
       end
     rescue => e
       puts e, e.backtrace
-      render :json => "Sorry, didn't understand that"
+      out << "Sorry, didn't understand that"
+      render :json => out
     end
   end
 
   def newcost
+    out = "#{params['command']} #{params['text']}\n"
+    
     c = Cost.where(category:'cost center').pluck(:code).max
     Cost.create(title:params['text'],code:c+1,category:'cost center')
-    render :json => "Added #{params['text']}, code #{c+1}"
+    out << "Added #{params['text']}, code #{c+1}"
+    render :json => out
   end
 
   def standup
+    out = "#{params['command']} #{params['text']}\n"
+    
     u = User.find_or_create_by(slackid: params['user_id'])
 
     tz = localtime(u.slackid)
     date = DateTime.now.in_time_zone(tz).strftime("%Y-%m-%d")
 
-    out = ""
     ents = u.entries.where(date:date)
     out << "Today you've done #{ents.pluck(:time).sum} total:"
     if ents.empty?
