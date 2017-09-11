@@ -40,6 +40,7 @@ class TimesController < ApplicationController
 
   def find
     out = "#{params['command']} #{params['text']}\n"
+    found = false
     term = params['text'].split(' ')
     if term.empty?
       out << "What deal are you looking for?"
@@ -48,8 +49,9 @@ class TimesController < ApplicationController
     end
     Cost.all.select{|x|term.all?{|w|x.title.downcase.include?(w.downcase)}}.each do |x|
       out = out+"#{x.code}: #{x.title}\n"
+      found = true
     end
-    out << 'None found' if out.empty?
+    out << 'None found' unless found
     render :json => out
   end
 
