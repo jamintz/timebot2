@@ -206,7 +206,7 @@ class TimesController < ApplicationController
               title: title,
               user_name: u.name
             )
-            out << "Thanks! #{time} added to #{deal_id} (#{title}) for #{fancy_date}"
+            out << "Thanks! #{time} added to #{cst.code} (#{title}) for #{fancy_date}"
             out << " with note #{note}" unless note.nil? || note.empty?
             render :json => out
           end
