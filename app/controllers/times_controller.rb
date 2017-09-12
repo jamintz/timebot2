@@ -74,7 +74,7 @@ class TimesController < ApplicationController
   def favorites
     out = "#{params['command']} #{params['text']}\n"
     u = User.find_or_create_by(slackid: params['user_id'])
-    u.favorites.each{|x|out = out + "\n#{x.cost.title} – #{x.cost.code}"}
+    u.favorites.sort_by(&:created_at).each_with_index{|x,i|out = out + "\n#{i}. #{x.cost.title} – #{x.cost.code}"}
     render :json => out
   end
 
@@ -110,6 +110,18 @@ class TimesController < ApplicationController
     date = DateTime.now.in_time_zone(tz).strftime("%Y-%m-%d")
     u.entries.where(date:date).destroy_all
     render :json => "Day reset"
+  end
+  
+  def undo
+    out = "#{params['command']} #{params['text']}\n"
+    
+    u = User.find_or_create_by(slackid: params['user_id'])
+    e = u.entries.last
+    e.destroy
+    out << "Entry #{e.title}: #{e.time} on #{e.date}"
+    out << " (#{e.note})" if e.note
+    out << " destroyed"
+    render :json => out
   end
 
   def add
@@ -171,7 +183,12 @@ class TimesController < ApplicationController
           out << "You can only add up to 40 hours at a time"
           render :json => out
         else
+          if deal_id < 100
+            deal_id = u.favorites.sort_by(&:created_at)[deal_id]
+          end
+          
           cst = Cost.where(code: deal_id).first
+          
           if cst.nil?
             out << "Deal not found"
             render :json => out
