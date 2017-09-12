@@ -184,8 +184,8 @@ class TimesController < ApplicationController
           render :json => out
         else
           if deal_id.to_i < 100
-            deal_id = u.favorites.sort_by(&:created_at)[deal_id.to_i].cost_id
-            cst = Cost.where(id:deal_id).first
+            cost = u.favorites.sort_by(&:created_at)[deal_id.to_i].cost_id
+            cst = Cost.where(id:cost).first
           else
             cst = Cost.where(code: deal_id).first
           end
@@ -199,7 +199,7 @@ class TimesController < ApplicationController
               user_id: u.id,
               email: u.email,
               date: fancy_date,
-              deal_id: deal_id,
+              deal_id: cst.code,
               kind: kind,
               note: note,
               time: time,
