@@ -183,7 +183,7 @@ class TimesController < ApplicationController
           out << "You can only add up to 40 hours at a time"
           render :json => out
         else
-          if deal_id < 100
+          if deal_id.to_i < 100
             deal_id = u.favorites.sort_by(&:created_at)[deal_id]
           end
           
